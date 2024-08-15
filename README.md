@@ -38,7 +38,7 @@ cybergear.set_mode(id_num='{MOTOR_ID}', mode=0)
 cybergear.impedance_control(id_num='{MOTOR_ID}', pos='{ANGLE}', vel='{SPEED}', tff='{FEEDFORWARD_TORQUE}', kp='{PROPORTIONAL_GAIN}', kd='{DERIVATIVE_GAIN}')
 ```
 
-- 'set_angle': Control the specified motor to rotate to the specified angle at the specified speed.
+- 'set_pos': Control the specified motor to rotate to the specified angle at the specified speed.
 ```python
 cybergear.set_angle(id_num='{MOTOR_ID}', angle='{ANGLE}', speed='{SPEED}')
 ```
@@ -89,3 +89,5 @@ Here are several examples in the 'examples' folder that you can refer to:
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments

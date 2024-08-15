@@ -20,8 +20,8 @@
 #                   reply_state: Motor response feedback frame.
 #                   set_mode: Set motion mode.
 #                   motor_enable: Motor enable.
-#                   set_angle: Position control.
-#                   set_speed: Speed control.
+#                   set_pos: Position control.
+#                   set_vel: Speed control.
 #                   set_torque: Torque (current) control.
 #                   impedance_control: Impedance control.
 #                   motor_stop: Stop the motor.
@@ -106,11 +106,11 @@ class CyberGear():
 
         # Motor status two-dimensional array, 
         # get the real-time return status 
-        # [angle,speed,torque,motor_temp,axis_error,mode_status] of the motor id_num 
+        # [position,speed,torque,motor_temp,axis_error,mode_status] of the motor id_num 
         # through motor_state[id_num-1], 
         # the units are degree, r/min, Nm, 
         # the three variable values refer to the motor output shaft,
-        # where motor_state[id_num-1][0] represents the angle of the id_num motor, 
+        # where motor_state[id_num-1][0] represents the position of the id_num motor, 
         # motor_state[id_num-1][1] represents the speed of the id_num motor, 
         # motor_state[id_num-1][2] represents the output torque of the id_num motor
         self.motor_state = np.zeros((self.MOTOR_NUM, 6))
@@ -452,10 +452,10 @@ class CyberGear():
                     id_num=127):
         '''Motor motion control command real-time return parameters
         This function reads the real-time return parameters 
-        [angle, speed, torque, temp, error_flag, mode_status] 
+        [position, speed, torque, temp, error_flag, mode_status] 
         of the motor motion control command, with units of degree, r/min, Nm, respectively, 
         all referring to the motor output shaft.
-        Where motor_state[id_num-1][0] represents the angle of the id_num motor, 
+        Where motor_state[id_num-1][0] represents the position of the id_num motor, 
         motor_state[id_num-1][1] represents the speed of the id_num motor, 
         motor_state[id_num-1][2] represents the output torque of the id_num motor.
         
@@ -686,7 +686,7 @@ class CyberGear():
 
         Args:
             id_num: The ID number of the motor to be set
-            pos: Motor target angle (degrees)
+            pos: Motor target position (degrees)
             vel: Motor target speed (r/min)
             tff: Feedforward torque (Nm)
             kp: Stiffness coefficient (rad/Nm)
@@ -724,19 +724,19 @@ class CyberGear():
         except Exception as e:
             print("!!!ERROR IN IMPENDENCE CONTROL:", e)
 
-    def set_angle(self, 
-                  id_num=127, 
-                  angle=0, 
-                  speed=10, 
-                  limit_cur=27):
-        '''Motor angle control function.
+    def set_pos(self, 
+                id_num=127, 
+                pos=0, 
+                vel=10, 
+                limit_cur=27):
+        '''Motor position control function.
         Control the specified motor to rotate to 
-        the specified angle at the specified speed
+        the specified position at the specified speed
 
         Args:
             id_num: The ID number of the motor to be set
-            angle: Motor rotation angle (degrees)
-            speed: Maximum speed limit or feedforward speed (0~300r/min)
+            pos: Motor position (degrees)
+            vel: Maximum speed limit or feedforward speed (0~300r/min)
             limit_cur: Current limit (0-27A)
 
         Returns:
@@ -752,16 +752,16 @@ class CyberGear():
                         data_type='f')
         self.write_prop(id_num=id_num, 
                         index=0x7017, 
-                        value=speed*self.R_MIN_RAD_S, 
+                        value=vel*self.R_MIN_RAD_S, 
                         data_type='f')
         self.write_prop(id_num=id_num, 
                         index=0x7016, 
-                        value=angle*self.DEG_RAD, 
+                        value=pos*self.DEG_RAD, 
                         data_type='f')
 
-    def set_speed(self, 
+    def set_vel(self, 
                   id_num=127, 
-                  speed=10, 
+                  vel=10, 
                   limit_cur=27):
         '''Motor speed control function.
         Control the specified motor to 
@@ -769,7 +769,7 @@ class CyberGear():
 
         Args:
             id_num: The ID number of the motor to be set
-            speed:  Target speed (-300~300r/min)
+            vel: Target speed (-300~300r/min)
             limit_cur: Current limit (0-27A)
 
         Returns:
@@ -785,7 +785,7 @@ class CyberGear():
                         data_type='f')
         self.write_prop(id_num=id_num, 
                         index=0x700A, 
-                        value=speed*self.R_MIN_RAD_S, 
+                        value=vel*self.R_MIN_RAD_S, 
                         data_type='f')
 
     def set_torque(self, 
