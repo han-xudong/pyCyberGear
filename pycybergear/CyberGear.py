@@ -7,30 +7,30 @@
 # Created:          2024/06/05
 # Description:      Xiaomi CyberGear Micro Motor Python Control Library.
 # Function List:    CyberGear: Class of Xiaomi CyberGear Micro Motor.
-#                   write_data: Write data to serial port.
-#                   read_data: Read data from serial port.
-#                   can_to_uart: USB to CAN module packet mode: CAN message -> Serial frame.
-#                   uart_to_can: USB to CAN module packet mode: Serial frame -> CAN message.
-#                   send_command: CAN send function.
-#                   receive_data: CAN receive function.
-#                   format_data: Data format conversion function.
-#                   float_to_uint: Float to uint conversion.
-#                   uint_to_float: Uint to float conversion.
-#                   dump_error: Fault feedback frame parsing.
-#                   reply_state: Motor response feedback frame.
-#                   set_mode: Set motion mode.
+#                   _write_port: Write data to serial port.
+#                   _read_port: Read data from serial port.
+#                   _can_to_uart: USB to CAN module packet mode: CAN message -> Serial frame.
+#                   _uart_to_can: USB to CAN module packet mode: Serial frame -> CAN message.
+#                   _send_can: CAN send function.
+#                   _receive_can: CAN receive function.
+#                   _format_data: Data format conversion function.
+#                   _float_to_uint: Float to uint conversion.
+#                   _uint_to_float: Uint to float conversion.
+#                   _dump_error: Fault feedback frame parsing.
+#                   _reply_state: Motor response feedback frame.
+#                   _write_prop: Modify motor attribute parameters.
+#                   _read_prop: Read motor attribute parameters.
 #                   motor_enable: Motor enable.
+#                   motor_stop: Stop running.
+#                   set_mode: Set motor mode.
+#                   impedance_control: Impedance control mode.
 #                   set_pos: Position control.
 #                   set_vel: Speed control.
 #                   set_torque: Torque (current) control.
-#                   impedance_control: Impedance control.
-#                   motor_stop: Stop the motor.
 #                   set_zero: Set zero position of the motor.
-#                   clear_error: Clear error.
 #                   set_id: Set motor ID number.
+#                   clear_error: Clear motor error.
 #                   restore_config: Restore factory settings.
-#                   write_prop: Write property.
-#                   read_prop: Read property.
 #                   get_id: Get motor ID number.
 #                   get_posvel: Get motor position and speed.
 #                   get_volcur: Get motor voltage and current.
@@ -48,14 +48,14 @@ import numpy as np
 
 class CyberGear():
     def __init__(self,
-                 com_port='COM12',
+                 com_port='COM3',
                  baud_rate=115200) -> None:
         '''Xiaomi CyberGear Micro Motor Python Control Library,
         which can be used to control Xiaomi CyberGear micro motors
         through serial port communication.
 
         Args:
-            com_port: Serial port number (default is 'COM12')
+            com_port: Serial port number
             baud_rate: Baud rate (default is 115200)
 
         Returns:
@@ -115,8 +115,8 @@ class CyberGear():
         # motor_state[id_num-1][2] represents the output torque of the id_num motor
         self.motor_state = np.zeros((self.MOTOR_NUM, 6))
 
-    def write_data(self, 
-                   data=[]):
+    def _write_port(self, 
+                    data=[]):
         '''Write data to serial port.
         
         Args:
@@ -134,18 +134,18 @@ class CyberGear():
             self.uart.read(self.uart.inWaiting())
         # Write data to the serial port
         try:
-            result = self.uart.write(data)  # write data
+            result = self.uart.write(data)
             return result
         except Exception as e:
             print("!!!ERROR IN WRITING DATA:", e)
             print("Restart the serial port")
             self.uart.close()
             self.uart.open()
-            result = self.uart.write(data)  # write data
+            result = self.uart.write(data)
             return result
 
-    def read_data(self, 
-                  num=16):
+    def _read_port(self, 
+                   num=16):
         '''Read data from serial port.
 
         Args:
@@ -174,13 +174,13 @@ class CyberGear():
             self.READ_FLAG = 1
             return byte_list
         else:
-            print("Received data error in read_data():" + str(byte_list))
+            print("Received data error in _read_port():" + str(byte_list))
             self.READ_FLAG = -1
             return
 
-    def can_to_uart(self, 
-                    data=[], 
-                    rtr=0):
+    def _can_to_uart(self, 
+                     data=[], 
+                     rtr=0):
         '''USB to CAN module packet mode: CAN message -> Serial frame.
         
         Args:
@@ -199,8 +199,8 @@ class CyberGear():
         else:
             return []
 
-    def uart_to_can(self, 
-                    data=[]):
+    def _uart_to_can(self, 
+                     data=[]):
         '''USB to CAN module packet mode: Serial frame -> CAN message.
 
         Args:
@@ -219,13 +219,12 @@ class CyberGear():
             self.READ_FLAG = -1
             return []
 
-    # CAN send function
-    def send_command(self, 
-                     id_num=127, 
-                     cmd_mode=0, 
-                     cmd_data=[], 
-                     data=[], 
-                     rtr=0):
+    def _send_can(self, 
+                  id_num=127, 
+                  cmd_mode=0, 
+                  cmd_data=[], 
+                  data=[], 
+                  rtr=0):
         '''CAN send function.
         
         Args:
@@ -246,9 +245,10 @@ class CyberGear():
         cdata[4] = int(id_num)
         for i in range(8):
             cdata[5 + i] = data[i]
-        self.write_data(data=self.can_to_uart(data=cdata, rtr=rtr))
+        self._write_port(data=self._can_to_uart(data=cdata, 
+                                                rtr=rtr))
 
-    def receive_data(self):
+    def _receive_can(self):
         '''CAN receive function.
 
         Args:
@@ -258,17 +258,17 @@ class CyberGear():
             cdata: CAN message data
         '''
 
-        udata = self.read_data(16)
+        udata = self._read_port(16)
         if self.READ_FLAG == 1:
-            cdata = self.uart_to_can(data=udata)
+            cdata = self._uart_to_can(data=udata)
             if cdata[1] == 21:
-                self.dump_error(cdata, True)
+                self._dump_error(cdata, True)
             return cdata[:]
 
-    def format_data(self, 
-                    data=[], 
-                    format="f f", 
-                    type='decode'):
+    def _format_data(self, 
+                     data=[], 
+                     format="f f", 
+                     type='decode'):
         '''Data format conversion function.
         Decode is to convert binary (bytes) into data that people can understand,
         while encode is the opposite.
@@ -309,7 +309,7 @@ class CyberGear():
                         p = p + 1
                     rdata.append(struct.unpack(s_f[1], ba)[0])
                 else:
-                    print('Unknown format in format_data(): ' + f)
+                    print('Unknown format in _format_data(): ' + f)
                     return []
             return rdata
         elif type == 'encode' and len(format_list) == len(data):
@@ -333,11 +333,12 @@ class CyberGear():
                 if f != 'f':
                     data[i] = int(data[i])
                 if len(s_f) == 2:
-                    bs = struct.pack(s_f[1], data[i])
+                    bs = struct.pack(s_f[1], 
+                                     data[i])
                     for j in range(s_f[0]):
                         rdata.append(bs[j])
                 else:
-                    print('Unknown format in format_data(): ' + f)
+                    print('Unknown format in _format_data(): ' + f)
                     return []
             if len(rdata) < 4:
                 for i in range(4 - len(rdata)):
@@ -345,11 +346,11 @@ class CyberGear():
             return rdata
 
 
-    def float_to_uint(self, 
-                      x, 
-                      x_min, 
-                      x_max, 
-                      bits):
+    def _float_to_uint(self, 
+                       x, 
+                       x_min, 
+                       x_max, 
+                       bits):
         '''Float to uint conversion.
         
         Args:
@@ -370,12 +371,11 @@ class CyberGear():
             x = x_min
         return int(((x - offset)*((1 << bits) - 1)/span))
 
-
-    def uint_to_float(self, 
-                      x, 
-                      x_min, 
-                      x_max, 
-                      bits):
+    def _uint_to_float(self, 
+                       x, 
+                       x_min, 
+                       x_max, 
+                       bits):
         '''Uint to float conversion.
 
         Args:
@@ -396,8 +396,8 @@ class CyberGear():
             x = 0
         return offset*x/span + x_min
 
-    def dump_error(self, 
-                   rdata=[]):
+    def _dump_error(self, 
+                    rdata=[]):
         '''
         Print motor error number (motor automatically returns error information)
         Read the motor error information code, 
@@ -446,10 +446,8 @@ class CyberGear():
         print(self.ERROR_FLAG)
         return self.ERROR_FLAG
 
-
-    # Motor response feedback frame
-    def reply_state(self, 
-                    id_num=127):
+    def _reply_state(self, 
+                     id_num=127):
         '''Motor motion control command real-time return parameters
         This function reads the real-time return parameters 
         [position, speed, torque, temp, error_flag, mode_status] 
@@ -466,25 +464,25 @@ class CyberGear():
             None
 
         Raises:
-            "!!!ERROR IN REPLY_STATE"
+            "!!!ERROR IN _reply_state"
         '''
 
         try:
             if id_num <= self.MOTOR_NUM:
                 self.READ_FLAG = 0
-                rdata = self.receive_data()
+                rdata = self._receive_can()
                 # [0x08 mode cmd_data[1] cmd_data[0] id_num data0 data1 data2 data3 data4 data5 data6 data7]
                 if self.READ_FLAG == 1 and rdata[1] == 2:
                     cmd_data = [rdata[3], rdata[2]]
                     id_num = rdata[3]
                     data = rdata[5:]
-                    self.motor_state[id_num - 1][0] = self.uint_to_float((data[0] << 8) + data[1], 
-                                                                         self.P_MIN, self.P_MAX, 16) * self.RAD_DEG
-                    self.motor_state[id_num - 1][1] = self.uint_to_float((data[2] << 8) + data[3], 
-                                                                         self.V_MIN, self.V_MAX, 16) * self.RAD_S_R_MIN
-                    self.motor_state[id_num - 1][2] = self.uint_to_float((data[4] << 8) + data[5], 
-                                                                         self.T_MIN, self.T_MAX, 16)
-                    self.motor_state[id_num - 1][3] = ((data[6] << 8) + data[7]) * 0.1
+                    self.motor_state[id_num - 1][0] = self._uint_to_float((data[0] << 8) + data[1], 
+                                                                          self.P_MIN, self.P_MAX, 16)*self.RAD_DEG
+                    self.motor_state[id_num - 1][1] = self._uint_to_float((data[2] << 8) + data[3], 
+                                                                          self.V_MIN, self.V_MAX, 16)*self.RAD_S_R_MIN
+                    self.motor_state[id_num - 1][2] = self._uint_to_float((data[4] << 8) + data[5], 
+                                                                          self.T_MIN, self.T_MAX, 16)
+                    self.motor_state[id_num - 1][3] = ((data[6] << 8) + data[7])*0.1
                     if cmd_data[1] & 0x3F:
                         self.motor_state[id_num - 1][4] = 1
                         self.ERROR_FLAG = 'Status abnormal: '
@@ -507,13 +505,13 @@ class CyberGear():
                     mode_status = (cmd_data[1] >> 6) & 0x03
                     self.motor_state[id_num - 1][5] = mode_status
         except Exception as e:
-            print("!!!ERROR IN REPLY_STATE:", e)
+            print("!!!ERROR IN _reply_state:", e)
 
-    def write_prop(self, 
-                   id_num=127, 
-                   index=0, 
-                   data_type='f', 
-                   value=0):
+    def _write_prop(self, 
+                    id_num=127, 
+                    index=0, 
+                    data_type='f', 
+                    value=0):
         '''Modify motor attribute parameters
 
         Args:
@@ -528,9 +526,9 @@ class CyberGear():
         '''
         
         master_id = 0
-        cmd_data = [0] * 2
+        cmd_data = [0]*2
         cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
+        tx_data = [0]*8
         tx_data[0] = index & 0xFF
         tx_data[1] = (index >> 8) & 0xFF
         cmd_mode = 18
@@ -538,34 +536,34 @@ class CyberGear():
             cmd_mode = 8
             type_list = ['u8', 's8', 'u16', 's16', 'u32', 's32', 'f']
             tx_data[2] = type_list.index(data_type)
-        tx_data[4:] = self.format_data(data=[value], 
-                                       format=data_type, 
-                                       type="encode")
+        tx_data[4:] = self._format_data(data=[value], 
+                                        format=data_type, 
+                                        type="encode")
         # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=cmd_mode, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        self.reply_state(id_num=id_num)
+        self._send_can(id_num=id_num, 
+                       cmd_mode=cmd_mode, 
+                       cmd_data=cmd_data, 
+                       data=tx_data, 
+                       rtr=0)
+        self._reply_state(id_num=id_num)
         # Save forever
         if cmd_mode == 8:
             self.motor_stop(id_num=id_num)
             cmd_data[1] = 0x02
-            tx_data = [0] * 8
+            tx_data = [0]*8
             # Need to send using extended frame (data frame)
-            self.send_command(id_num=id_num, 
-                              cmd_mode=cmd_mode, 
-                              cmd_data=cmd_data, 
-                              data=tx_data, 
-                              rtr=0)
+            self._send_can(id_num=id_num, 
+                           cmd_mode=cmd_mode, 
+                           cmd_data=cmd_data, 
+                           data=tx_data, 
+                           rtr=0)
             time.sleep(0.1)
-            self.reply_state(id_num=id_num)
+            self._reply_state(id_num=id_num)
 
-    def read_prop(self, 
-                  id_num=127, 
-                  index=0, 
-                  data_type='f'):
+    def _read_prop(self, 
+                   id_num=127, 
+                   index=0, 
+                   data_type='f'):
         '''Read motor attribute parameters
 
         Args:
@@ -579,9 +577,9 @@ class CyberGear():
         '''
 
         master_id = 0
-        cmd_data = [0] * 2
+        cmd_data = [0]*2
         cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
+        tx_data = [0]*8
         tx_data[0] = index & 0xFF
         tx_data[1] = (index >> 8) & 0xFF
         cmd_mode = 17
@@ -590,16 +588,16 @@ class CyberGear():
             type_list = ['u8', 's8', 'u16', 's16', 'u32', 's32', 'f']
             tx_data[2] = type_list.index(data_type)
         # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=cmd_mode, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        data = self.receive_data()
+        self._send_can(id_num=id_num, 
+                       cmd_mode=cmd_mode, 
+                       cmd_data=cmd_data, 
+                       data=tx_data, 
+                       rtr=0)
+        data = self._receive_can()
         if READ_FLAG == 1 and (data[1] == 17 or data[1] == 9):
-            value = self.format_data(data=data[9:], 
-                                     format=data_type, 
-                                     type="decode")
+            value = self._format_data(data=data[9:], 
+                                      format=data_type, 
+                                      type="decode")
             return value[0]
 
     def motor_enable(self, 
@@ -614,19 +612,18 @@ class CyberGear():
         '''
 
         master_id = 0
-        cmd_data = [0] * 2
+        cmd_data = [0]*2
         cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
+        tx_data = [0]*8
         for i in range(8):
             tx_data[i] = 0x00
         
-        # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=3, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        self.reply_state(id_num=id_num)
+        self._send_can(id_num=id_num, 
+                       cmd_mode=3, 
+                       cmd_data=cmd_data, 
+                       data=tx_data, 
+                       rtr=0)
+        self._reply_state(id_num=id_num)
 
     def motor_stop(self, 
                     id_num=127):
@@ -640,18 +637,18 @@ class CyberGear():
         '''
 
         master_id = 0
-        cmd_data = [0] * 2
+        cmd_data = [0]*2
         cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
+        tx_data = [0]*8
         for i in range(8):
             tx_data[i] = 0x00
-        # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=4, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        self.reply_state(id_num=id_num)
+
+        self._send_can(id_num=id_num, 
+                       cmd_mode=4, 
+                       cmd_data=cmd_data, 
+                       data=tx_data, 
+                       rtr=0)
+        self._reply_state(id_num=id_num)
 
     def set_mode(self, 
                  id_num=127, 
@@ -670,10 +667,10 @@ class CyberGear():
             None
         '''
 
-        self.write_prop(id_num=id_num, 
-                        index=0x7005, 
-                        value=mode, 
-                        data_type='u8')
+        self._write_prop(id_num=id_num, 
+                         index=0x7005, 
+                         value=mode, 
+                         data_type='u8')
 
     def impedance_control(self, 
                           id_num=127, 
@@ -701,26 +698,57 @@ class CyberGear():
 
         try:
             self.motor_enable(id_num=id_num)
-            self.set_mode(id_num=id_num, mode=0)
-            cmd_data = [0] * 2
-            cmd_data[0] = (self.float_to_uint(tff, self.T_MIN, self.T_MAX, 16)) & 0xFF
-            cmd_data[1] = ((self.float_to_uint(tff, self.T_MIN, self.T_MAX, 16)) >> 8) & 0xFF
-            tx_data = [0] * 8
-            tx_data[0] = (self.float_to_uint(pos * self.DEG_RAD, self.P_MIN, self.P_MAX, 16) >> 8) & 0xFF
-            tx_data[1] = (self.float_to_uint(pos * self.DEG_RAD, self.P_MIN, self.P_MAX, 16)) & 0xFF
-            tx_data[2] = (self.float_to_uint(vel * self.R_MIN_RAD_S, self.V_MIN, self.V_MAX, 16) >> 8) & 0xFF
-            tx_data[3] = (self.float_to_uint(vel * self.R_MIN_RAD_S, self.V_MIN, self.V_MAX, 16)) & 0xFF
-            tx_data[4] = (self.float_to_uint(kp, self.KP_MIN, self.KP_MAX, 16) >> 8) & 0xFF
-            tx_data[5] = (self.float_to_uint(kp, self.KP_MIN, self.KP_MAX, 16)) & 0xFF
-            tx_data[6] = (self.float_to_uint(kd, self.KD_MIN, self.KD_MAX, 16) >> 8) & 0xFF
-            tx_data[7] = (self.float_to_uint(kd, self.KD_MIN, self.KD_MAX, 16)) & 0xFF
+            self.set_mode(id_num=id_num, 
+                          mode=0)
+            cmd_data = [0]*2
+            cmd_data[0] = (self._float_to_uint(tff, 
+                                               self.T_MIN, 
+                                               self.T_MAX, 
+                                               16)) & 0xFF
+            cmd_data[1] = ((self._float_to_uint(tff, 
+                                                self.T_MIN, 
+                                                self.T_MAX, 
+                                                16)) >> 8) & 0xFF
+            tx_data = [0]*8
+            tx_data[0] = (self._float_to_uint(pos*self.DEG_RAD, 
+                                              self.P_MIN, 
+                                              self.P_MAX, 
+                                              16) >> 8) & 0xFF
+            tx_data[1] = (self._float_to_uint(pos*self.DEG_RAD, 
+                                              self.P_MIN, 
+                                              self.P_MAX, 
+                                              16)) & 0xFF
+            tx_data[2] = (self._float_to_uint(vel*self.R_MIN_RAD_S, 
+                                              self.V_MIN, 
+                                              self.V_MAX, 
+                                              16) >> 8) & 0xFF
+            tx_data[3] = (self._float_to_uint(vel*self.R_MIN_RAD_S, 
+                                              self.V_MIN, 
+                                              self.V_MAX, 
+                                              16)) & 0xFF
+            tx_data[4] = (self._float_to_uint(kp, 
+                                              self.KP_MIN, 
+                                              self.KP_MAX, 
+                                              16) >> 8) & 0xFF
+            tx_data[5] = (self._float_to_uint(kp, 
+                                              self.KP_MIN, 
+                                              self.KP_MAX, 
+                                              16)) & 0xFF
+            tx_data[6] = (self._float_to_uint(kd, 
+                                              self.KD_MIN, 
+                                              self.KD_MAX, 
+                                              16) >> 8) & 0xFF
+            tx_data[7] = (self._float_to_uint(kd, 
+                                              self.KD_MIN, 
+                                              self.KD_MAX, 
+                                              16)) & 0xFF
             # Need to send using extended frame (data frame)
-            self.send_command(id_num=id_num, 
-                              cmd_mode=1, 
-                              cmd_data=cmd_data, 
-                              data=tx_data, 
-                              rtr=0)
-            self.reply_state(id_num=id_num)
+            self._send_can(id_num=id_num, 
+                           cmd_mode=1, 
+                           cmd_data=cmd_data, 
+                           data=tx_data, 
+                           rtr=0)
+            self._reply_state(id_num=id_num)
         except Exception as e:
             print("!!!ERROR IN IMPENDENCE CONTROL:", e)
 
@@ -746,23 +774,23 @@ class CyberGear():
         self.motor_enable(id_num=id_num)
         self.set_mode(id_num=id_num, 
                       mode=1)
-        self.write_prop(id_num=id_num, 
-                        index=0x7018, 
-                        value=limit_cur, 
-                        data_type='f')
-        self.write_prop(id_num=id_num, 
-                        index=0x7017, 
-                        value=vel*self.R_MIN_RAD_S, 
-                        data_type='f')
-        self.write_prop(id_num=id_num, 
-                        index=0x7016, 
-                        value=pos*self.DEG_RAD, 
-                        data_type='f')
+        self._write_prop(id_num=id_num, 
+                         index=0x7018, 
+                         value=limit_cur, 
+                         data_type='f')
+        self._write_prop(id_num=id_num, 
+                         index=0x7017, 
+                         value=vel*self.R_MIN_RAD_S, 
+                         data_type='f')
+        self._write_prop(id_num=id_num, 
+                         index=0x7016, 
+                         value=pos*self.DEG_RAD, 
+                         data_type='f')
 
     def set_vel(self, 
-                  id_num=127, 
-                  vel=10, 
-                  limit_cur=27):
+                id_num=127, 
+                vel=10, 
+                limit_cur=27):
         '''Motor speed control function.
         Control the specified motor to 
         continuously rotate at the specified speed.
@@ -779,14 +807,14 @@ class CyberGear():
         self.motor_enable(id_num=id_num)
         self.set_mode(id_num=id_num, 
                       mode=2)
-        self.write_prop(id_num=id_num, 
-                        index=0x7018, 
-                        value=limit_cur, 
-                        data_type='f')
-        self.write_prop(id_num=id_num, 
-                        index=0x700A, 
-                        value=vel*self.R_MIN_RAD_S, 
-                        data_type='f')
+        self._write_prop(id_num=id_num, 
+                         index=0x7018, 
+                         value=limit_cur, 
+                         data_type='f')
+        self._write_prop(id_num=id_num, 
+                         index=0x700A, 
+                         value=vel*self.R_MIN_RAD_S, 
+                         data_type='f')
 
     def set_torque(self, 
                    id_num=127, 
@@ -805,10 +833,10 @@ class CyberGear():
         self.motor_enable(id_num=id_num)
         self.set_mode(id_num=id_num, 
                       mode=3)
-        self.write_prop(id_num=id_num, 
-                        index=0x7006, 
-                        value=torque/self.TORQUE_CONSTANT, 
-                        data_type='f')
+        self._write_prop(id_num=id_num, 
+                         index=0x7006, 
+                         value=torque/self.TORQUE_CONSTANT, 
+                         data_type='f')
 
     def set_zero(self, 
                  id_num=127):
@@ -824,17 +852,17 @@ class CyberGear():
         mode_status = self.motor_state[id_num - 1][5]
         self.motor_stop(id_num=id_num)
         master_id = 0
-        cmd_data = [0] * 2
+        cmd_data = [0]*2
         cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
+        tx_data = [0]*8
         tx_data[0] = 0x01
         # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=6, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        self.reply_state(id_num=id_num)
+        self._send_can(id_num=id_num, 
+                       cmd_mode=6, 
+                       cmd_data=cmd_data, 
+                       data=tx_data, 
+                       rtr=0)
+        self._reply_state(id_num=id_num)
         if mode_status == 2:
             self.motor_enable(id_num=id_num)
 
@@ -861,19 +889,19 @@ class CyberGear():
         time.sleep(0.1)
         self.get_id(id_num=id_num)
         master_id = 0
-        cmd_data = [0] * 2
+        cmd_data = [0]*2
         cmd_data[1] = new_id & 0xFF
         cmd_data[0] = master_id & 0xFF
         if len(MCU_ID) == 8:
             tx_data = MCU_ID
             # Need to send using extended frame (data frame)
-            self.send_command(id_num=id_num, 
-                              cmd_mode=7, 
-                              cmd_data=cmd_data, 
-                              data=tx_data, 
-                              rtr=0)
+            self._send_can(id_num=id_num, 
+                           cmd_mode=7, 
+                           cmd_data=cmd_data, 
+                           data=tx_data, 
+                           rtr=0)
             time.sleep(0.1)
-            self.reply_state(id_num=id_num)
+            self._reply_state(id_num=id_num)
             return True
         else:
             print("Set ID to " + str(new_id) + " failed!")
@@ -895,17 +923,17 @@ class CyberGear():
         
         self.ERROR_FLAG = 'Status normal'
         master_id = 0
-        cmd_data = [0] * 2
+        cmd_data = [0]*2
         cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
+        tx_data = [0]*8
         tx_data[0] = 0x01
         # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=4, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        self.reply_state(id_num=id_num)
+        self._send_can(id_num=id_num, 
+                       cmd_mode=4, 
+                       cmd_data=cmd_data, 
+                       data=tx_data, 
+                       rtr=0)
+        self._reply_state(id_num=id_num)
 
     def restore_config(self, 
                     id_num=127):
@@ -932,14 +960,15 @@ class CyberGear():
         for i in range(8):
             tx_data[i] = 0x00
         # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=8, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
+        self._send_can(id_num=id_num, 
+                       cmd_mode=8, 
+                       cmd_data=cmd_data, 
+                       data=tx_data, 
+                       rtr=0)
         print("Restoring factory settings... Please wait for 3 seconds...")
         time.sleep(3.0)
-        self.set_id(127, id_num)
+        self.set_id(127, 
+                    id_num)
         print("Successfully restored to factory settings!")
 
     def get_id(self, 
@@ -955,16 +984,16 @@ class CyberGear():
 
         global MCU_ID
         master_id = 0xFD
-        cmd_data = [0] * 2
+        cmd_data = [0]*2
         cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
-        # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=0, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        data = self.receive_data()
+        tx_data = [0]*8
+
+        self._send_can(id_num=id_num, 
+                       cmd_mode=0, 
+                       cmd_data=cmd_data, 
+                       data=tx_data, 
+                       rtr=0)
+        data = self._receive_can()
         if READ_FLAG == 1 and data[1] == 0:
             MCU_ID = data[5:]
             return id_num
@@ -991,10 +1020,10 @@ class CyberGear():
         try:
             # Call the master_ID write interface to get real-time position and speed 
             # through the motor response feedback frame
-            self.write_prop(id_num=id_num, 
-                            index=0x7018, 
-                            value=27, 
-                            data_type='f')
+            self._write_prop(id_num=id_num, 
+                             index=0x7018, 
+                             value=27, 
+                             data_type='f')
             if self.READ_FLAG == 1 and id_num != 0:
                 pos_vel[0] = round(self.motor_state[id_num - 1][0], 1)
                 pos_vel[1] = round(self.motor_state[id_num - 1][1], 1)
@@ -1025,12 +1054,12 @@ class CyberGear():
         global READ_FLAG
         vol_cur = [0, 0]
         try:
-            vol_cur[0] = self.read_prop(id_num=id_num, 
-                                        index=0x302b, 
-                                        data_type='f')
-            vol_cur[1] = self.read_prop(id_num=id_num, 
-                                        index=0x301e, 
-                                        data_type='f')
+            vol_cur[0] = self._read_prop(id_num=id_num, 
+                                         index=0x302b, 
+                                         data_type='f')
+            vol_cur[1] = self._read_prop(id_num=id_num, 
+                                         index=0x301e, 
+                                         data_type='f')
             if READ_FLAG == 1:
                 vol_cur[0] = round(vol_cur[0], 1)
                 vol_cur[1] = round(vol_cur[1], 2)
