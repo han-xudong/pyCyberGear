@@ -82,3 +82,10 @@ cybergear.get_posvel(id_num='{MOTOR_ID}')
 ```python
 cybergear.get_volcur(id_num='{MOTOR_ID}')
 ```
+
+## Examples
+Here are several examples in the 'examples' folder that you can refer to:
+
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
