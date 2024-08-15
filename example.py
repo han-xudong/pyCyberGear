@@ -17,7 +17,7 @@
 #       Han Xudong      1.0.0           2024/06/21  Created the module
 # ------------------------------------------------------------------
 
-from modules.CyberGear import CyberGear
+from pycybergear.CyberGear import CyberGear
 import time
 import numpy as np
 import matplotlib.pyplot as plt

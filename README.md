@@ -1,4 +1,4 @@
-# CyberGear with Python
+# pyCyberGear: Control the CyberGear motor with Python
 
 ## Description
 This is a Python-based tool that can be used to control the CyberGear motor by Xiaomi. It is designed to be easy to use and can be used by both beginners and experts.
