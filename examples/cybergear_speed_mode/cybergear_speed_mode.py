@@ -1,7 +1,7 @@
 # -*- coding=utf-8 -*-
 
 # ------------------------------------------------------------------
-# File Name:        cybergear_position_mode.py
+# File Name:        cybergear_speed_mode.py
 # Author:           Han Xudong
 # Version:          1.0.0
 # Created:          2024/06/05
@@ -21,11 +21,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pycybergear import CyberGear
 
-def cybergear_position_mode(com_port: str,
-                            baud_rate: int,
-                            ids: list,
-                            target_pos: list,
-                            vel: int) -> None:
+def cybergear_speed_mode(com_port: str,
+                         baud_rate: int,
+                         ids: list,
+                         vels: int,
+                         motion_time: int) -> None:
     '''Position mode for CyberGear motors.
     
     Args:
@@ -44,14 +44,13 @@ def cybergear_position_mode(com_port: str,
 
     # Set mode and zero position
     for id in ids:
-        cybergear.set_mode(id_num=id, mode=1)
+        cybergear.set_mode(id_num=id, mode=2)
         cybergear.set_zero(id_num=id)
 
     # Create lists to store the position and velocity of motors
     time_list = [0]
     pos_list = [[0] for i in range(len(ids))]
     vel_list = [[0] for i in range(len(ids))]
-    cur_pos = np.zeros(len(ids))
 
     # Create an interactive plot
     fig = plt.figure(figsize=(10, 5), dpi=100)
@@ -66,16 +65,14 @@ def cybergear_position_mode(com_port: str,
 
     # Set the start time and error
     start_time = time.time()
-    err = 0.2
 
     # Move motors to the target position
     for i, id in enumerate(ids):
-        cybergear.set_pos(id_num=id, 
-                          pos=target_pos[i], 
-                          vel=vel)
+        cybergear.set_vel(id_num=id, 
+                          vel=vels[i])
 
     # Display the position and velocity of motors in real time
-    while np.mean(np.abs(cur_pos - target_pos)) > err:
+    while time.time() - start_time < motion_time:
         time_list.append(time.time() - start_time)
         for i, id in enumerate(ids):
             c_pos, c_vel = cybergear.get_posvel(id_num=id)
@@ -110,17 +107,17 @@ def cybergear_position_mode(com_port: str,
 
 if __name__ == '__main__':
     # Set the COM port and baud rate of the CyberGear controller
-    com_port = 'COM9'
+    com_port = 'COM3'
     baud_rate = 115200
     # Set the IDs of motors
-    ids = [7]
-    # Set the target position of motors
-    target_pos = [90]
+    ids = [1, 2]
     # Set the velocity of motors
-    vel = 20
+    vels = [10, 10]
+    # Set the motion time
+    motion_time = 5
     # Run the position mode
-    cybergear_position_mode(com_port, 
-                            baud_rate, 
-                            ids, 
-                            target_pos, 
-                            vel)
+    cybergear_speed_mode(com_port,
+                         baud_rate,
+                         ids,
+                         vels,
+                         motion_time)

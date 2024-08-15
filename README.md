@@ -46,17 +46,17 @@ cybergear.set_mode(id_num='{MOTOR_ID}', mode=0)
 
 - 'impedance_control': Control the specified motor with impedance.
 ```python
-cybergear.impedance_control(id_num='{MOTOR_ID}', pos='{ANGLE}', vel='{SPEED}', tff='{FEEDFORWARD_TORQUE}', kp='{PROPORTIONAL_GAIN}', kd='{DERIVATIVE_GAIN}')
+cybergear.impedance_control(id_num='{MOTOR_ID}', pos='{ANGLE}', vel='{VELOCITY}', tff='{FEEDFORWARD_TORQUE}', kp='{PROPORTIONAL_GAIN}', kd='{DERIVATIVE_GAIN}')
 ```
 
 - 'set_pos': Control the specified motor to rotate to the specified angle at the specified speed.
 ```python
-cybergear.set_angle(id_num='{MOTOR_ID}', angle='{ANGLE}', speed='{SPEED}')
+cybergear.set_pos(id_num='{MOTOR_ID}', pos='{ANGLE}', vel='{VELOCITY}')
 ```
 
-- 'set_speed': Control the specified motor to continuously rotate at the specified speed.
+- 'set_vel': Control the specified motor to rotate at the specified speed.
 ```python
-cybergear.set_speed(id_num='{MOTOR_ID}', speed='{SPEED}')
+cybergear.set_vel(id_num='{MOTOR_ID}', vel='{VELOCITY}')
 ```
 
 - 'set_torque': Control the specified motor to rotate to output the specified torque (Nm).
@@ -98,7 +98,7 @@ cybergear.get_volcur(id_num='{MOTOR_ID}')
 Here are several examples in the 'examples' folder that you can refer to:
 
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## License and Acknowledgements
+PyCyberGear is licensed under the MIT License.
 
-## Acknowledgments
+We sincerely thank the developers of the [DrEmpower Wiki](https://gitee.com/lyh458/drempower-wiki) for the core implementation of the CyberGear motor control library with their USB-to-CAN adapter.
