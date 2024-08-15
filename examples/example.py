@@ -19,6 +19,7 @@
 
 from pycybergear.CyberGear import CyberGear
 import time
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -133,7 +134,8 @@ def cybergear_test(com_port, baud_rate, num):
     print('\nDone!')
 
     # Save the figure and the data
-    save_path = 'out/' + time.strftime('%Y%m%d%H%M%S', time.localtime()) + '/'
+    save_path = time.strftime('%Y%m%d%H%M%S', time.localtime()) + '/'
+    os.makedirs(save_path)
     fig.savefig(save_path + 'curve.png')
     print('The figure is saved as curve.png in ' + save_path)
     np.savetxt(save_path + 'data.csv', 
