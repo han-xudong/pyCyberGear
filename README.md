@@ -121,4 +121,4 @@ python examples/cybergear_loop.py
 ## License and Acknowledgement
 PyCyberGear is licensed under the MIT License.
 
-We sincerely thank the developers of the [DrEmpower Wiki](https://gitee.com/lyh458/drempower-wiki) for the core implementation of the CyberGear motor control library with their USB-to-CAN adapter.
+We sincerely thank the developers of the [DrEmpower Wiki](https://github.com/DrRobotTech/drempower-wiki) for the core implementation of the CyberGear motor control library with their USB-to-CAN adapter.
