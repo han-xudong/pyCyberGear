@@ -1,12 +1,23 @@
 # pyCyberGear: Control the CyberGear motor with Python
 
 ## Description
-This is a Python-based tool that can be used to control the CyberGear motor by Xiaomi. It is designed to be easy to use for both beginners and experts.
+PyCyberGear is a Python library that allows you to control the CyberGear motor with Python. It provides a simple and easy-to-use interface to control the motor. The library suppprts:
+- Enable and stop the motor
+- Set motion mode: Impedance Control Mode, Position Mode, Speed Mode, Torque Mode
+- Control the motor with the four modes
+- Set zero position and ID
+- Clear error and restore configuration
+- Get the current position, velocity, voltage, and current
 
 ## Installation
-To install pyCyberGear, you can use the following command:
+The `pyCyberGear` package supports Python 3.9 through Python 3.12 on Windows and Linux.
+
+Install the latest release with:
 ```bash
-pip install pycybergear
+git clone https://github.com/han-xudong/pyCyberGear.git
+cd pyCyberGear
+pip install pip -U
+pip install -e .
 ```
 
 ## Quick Start
