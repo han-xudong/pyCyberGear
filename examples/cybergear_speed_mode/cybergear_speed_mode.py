@@ -57,8 +57,8 @@ def cybergear_speed_mode(com_port: str,
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
     plt.ion()
-    pos_lines = [ax1.plot(pos_list[i], label='Motor ' + str(ids[i])[0]) for i in range(len(ids))]
-    vel_lines = [ax2.plot(vel_list[i], label='Motor ' + str(ids[i])[0]) for i in range(len(ids))]
+    pos_lines = [ax1.plot(pos_list[i], label='Motor ' + str(ids[i]))[0] for i in range(len(ids))]
+    vel_lines = [ax2.plot(vel_list[i], label='Motor ' + str(ids[i]))[0] for i in range(len(ids))]
     ax1.legend(loc='upper right')
     ax2.legend(loc='upper right')
     plt.show()
@@ -78,8 +78,10 @@ def cybergear_speed_mode(com_port: str,
             c_pos, c_vel = cybergear.get_posvel(id_num=id)
             pos_list[i].append(c_pos)
             vel_list[i].append(c_vel)
-            pos_lines[i].set_data(time_list, pos_list[i])
-            vel_lines[i].set_data(time_list, vel_list[i])
+            pos_lines[i].set_xdata(time_list)
+            pos_lines[i].set_ydata(pos_list[i])
+            vel_lines[i].set_xdata(time_list)
+            vel_lines[i].set_ydata(vel_list[i])
         ax1.relim()
         ax1.autoscale_view()
         ax2.relim()
@@ -88,7 +90,7 @@ def cybergear_speed_mode(com_port: str,
 
     # Stop the motors
     for id in ids:
-        cybergear.stop(id_num=id)
+        cybergear.motor_stop(id_num=id)
     print('\nDone!')
 
     # Save the figure and the data
@@ -107,12 +109,12 @@ def cybergear_speed_mode(com_port: str,
 
 if __name__ == '__main__':
     # Set the COM port and baud rate of the CyberGear controller
-    com_port = 'COM3'
+    com_port = 'COM11'
     baud_rate = 115200
     # Set the IDs of motors
-    ids = [1, 2]
+    ids = [7]
     # Set the velocity of motors
-    vels = [10, 10]
+    vels = [10]
     # Set the motion time
     motion_time = 5
     # Run the position mode

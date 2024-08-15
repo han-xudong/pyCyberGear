@@ -158,17 +158,14 @@ class CyberGear():
         # Read data from the serial port
         self.READ_FLAG = -1
         byte_list = []
-        i = 1000
-        # After testing, it was found that the normal reception of 16 bits takes about 500
-        # The two time.sleep(0.001) in this function will affect the CAN reception speed. 
-        # If you want to increase the CAN reading speed, 
-        # you can comment out these two lines and change the above i to a larger value, such as 5000
+        i = 5000
         while self.uart.inWaiting() == 0 and i > 0:
             i -= 1
         # time.sleep(0.001)
         while self.uart.inWaiting() > 0:
             byte_list.append(list(self.uart.read(1))[0])
         
+        print(byte_list)
         # Return the received data
         if len(byte_list) == num:
             self.READ_FLAG = 1

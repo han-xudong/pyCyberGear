@@ -58,8 +58,8 @@ def cybergear_loop(com_port: str,
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
     plt.ion()
-    pos_lines = [ax1.plot(pos_list[i], label='Motor ' + ids[i])[0] for i in range(len(ids))]
-    vel_lines = [ax2.plot(vel_list[i], label='Motor ' + ids[i])[0] for i in range(len(ids))]
+    pos_lines = [ax1.plot(pos_list[i], label='Motor ' + str(ids[i]))[0] for i in range(len(ids))]
+    vel_lines = [ax2.plot(vel_list[i], label='Motor ' + str(ids[i]))[0] for i in range(len(ids))]
     ax1.legend(loc='upper right')
     ax2.legend(loc='upper right')
     plt.show()
@@ -129,7 +129,7 @@ def cybergear_loop(com_port: str,
     pos_0 = 0
     for id in ids:
         cybergear.set_pos(id_num=id, 
-                          angle=pos_0, 
+                          pos=pos_0, 
                           vel=vel)
     while np.mean(np.abs(cur_pos - pos_0)) > err:
         time_list.append(time.time() - start_time)
@@ -153,7 +153,7 @@ def cybergear_loop(com_port: str,
 
     # Stop the motors
     for id in ids:
-        cybergear.motor_estop(id_num=id)
+        cybergear.motor_stop(id_num=id)
     print('\nDone!')
 
     # Save the figure and the data
@@ -172,10 +172,10 @@ def cybergear_loop(com_port: str,
 
 if __name__ == '__main__':
     # Set the COM port and baud rate
-    com_port = 'COM3'
+    com_port = 'COM11'
     baud_rate = 115200
     # Set the ids of motors
-    ids = [0, 1]
+    ids = [7]
     # Set the angle range
     pos_range = [-360, 360]
     # Set the number of rounds
