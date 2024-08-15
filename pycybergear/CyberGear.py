@@ -24,15 +24,15 @@
 #                   set_speed: Speed control.
 #                   set_torque: Torque (current) control.
 #                   impedance_control: Impedance control.
-#                   motor_estop: Emergency stop of the motor.
-#                   set_zero_position: Set zero position of the motor.
+#                   motor_stop: Stop the motor.
+#                   set_zero: Set zero position of the motor.
 #                   clear_error: Clear error.
 #                   set_id: Set motor ID number.
-#                   init_config: Restore factory settings.
-#                   write_property: Write property.
-#                   read_property: Read property.
+#                   restore_config: Restore factory settings.
+#                   write_prop: Write property.
+#                   read_prop: Read property.
 #                   get_id: Get motor ID number.
-#                   get_state: Get motor state.
+#                   get_posvel: Get motor position and speed.
 #                   get_volcur: Get motor voltage and current.
 # History:
 #       <author>        <version>       <time>      <desc>
@@ -476,11 +476,14 @@ class CyberGear():
                 # [0x08 mode cmd_data[1] cmd_data[0] id_num data0 data1 data2 data3 data4 data5 data6 data7]
                 if self.READ_FLAG == 1 and rdata[1] == 2:
                     cmd_data = [rdata[3], rdata[2]]
-                    id_num = rdata[3]  # 电机返回的数据帧中电机CAN_ID位于Bit8~Bit15
+                    id_num = rdata[3]
                     data = rdata[5:]
-                    self.motor_state[id_num - 1][0] = self.uint_to_float((data[0] << 8) + data[1], self.P_MIN, self.P_MAX, 16) * self.RAD_DEG
-                    self.motor_state[id_num - 1][1] = self.uint_to_float((data[2] << 8) + data[3], self.V_MIN, self.V_MAX, 16) * self.RAD_S_R_MIN
-                    self.motor_state[id_num - 1][2] = self.uint_to_float((data[4] << 8) + data[5], self.T_MIN, self.T_MAX, 16)
+                    self.motor_state[id_num - 1][0] = self.uint_to_float((data[0] << 8) + data[1], 
+                                                                         self.P_MIN, self.P_MAX, 16) * self.RAD_DEG
+                    self.motor_state[id_num - 1][1] = self.uint_to_float((data[2] << 8) + data[3], 
+                                                                         self.V_MIN, self.V_MAX, 16) * self.RAD_S_R_MIN
+                    self.motor_state[id_num - 1][2] = self.uint_to_float((data[4] << 8) + data[5], 
+                                                                         self.T_MIN, self.T_MAX, 16)
                     self.motor_state[id_num - 1][3] = ((data[6] << 8) + data[7]) * 0.1
                     if cmd_data[1] & 0x3F:
                         self.motor_state[id_num - 1][4] = 1
@@ -502,41 +505,103 @@ class CyberGear():
                         self.ERROR_FLAG = 'Status normal'
                         self.motor_state[id_num - 1][4] = 0
                     mode_status = (cmd_data[1] >> 6) & 0x03
-                    # if mode_status == 0:
-                    #     print("The current mode status is Reset mode")
-                    # elif mode_status == 1:
-                    #     print("The current mode status is Cali mode")
-                    # elif mode_status == 2:
-                    #     print("The current mode status is Motor mode")
                     self.motor_state[id_num - 1][5] = mode_status
         except Exception as e:
             print("!!!ERROR IN REPLY_STATE:", e)
 
-    # Set motion mode
-    def set_mode(self, 
-                 id_num=127, 
-                 mode=0):
-        '''Set the motor to enter different control modes
+    def write_prop(self, 
+                   id_num=127, 
+                   index=0, 
+                   data_type='f', 
+                   value=0):
+        '''Modify motor attribute parameters
 
         Args:
-            id_num: The ID number of the motor to be set
-            mode: Motor mode number
-                mode = 0: Motion control mode
-                mode = 1: Position mode
-                mode = 2: Speed mode
-                mode = 3: Current mode
+            id_num: The ID number of the motor to be modified
+            index: The address of the parameter to be read
+            data_type: The data type of the parameter to be written: 
+                       'f':float,'u16':uint16,'s16':int16,'u32':uint32,'s32':int32,'u8':uint8,'s8':'int8'
+            value: Corresponding parameter data.
 
         Returns:
             None
         '''
+        
+        master_id = 0
+        cmd_data = [0] * 2
+        cmd_data[0] = master_id & 0xFF
+        tx_data = [0] * 8
+        tx_data[0] = index & 0xFF
+        tx_data[1] = (index >> 8) & 0xFF
+        cmd_mode = 18
+        if index < 0x7000:
+            cmd_mode = 8
+            type_list = ['u8', 's8', 'u16', 's16', 'u32', 's32', 'f']
+            tx_data[2] = type_list.index(data_type)
+        tx_data[4:] = self.format_data(data=[value], 
+                                       format=data_type, 
+                                       type="encode")
+        # Need to send using extended frame (data frame)
+        self.send_command(id_num=id_num, 
+                          cmd_mode=cmd_mode, 
+                          cmd_data=cmd_data, 
+                          data=tx_data, 
+                          rtr=0)
+        self.reply_state(id_num=id_num)
+        # Save forever
+        if cmd_mode == 8:
+            self.motor_stop(id_num=id_num)
+            cmd_data[1] = 0x02
+            tx_data = [0] * 8
+            # Need to send using extended frame (data frame)
+            self.send_command(id_num=id_num, 
+                              cmd_mode=cmd_mode, 
+                              cmd_data=cmd_data, 
+                              data=tx_data, 
+                              rtr=0)
+            time.sleep(0.1)
+            self.reply_state(id_num=id_num)
 
-        self.write_property(id_num=id_num, 
-                            index=0x7005, 
-                            value=mode, 
-                            data_type='u8')
+    def read_prop(self, 
+                  id_num=127, 
+                  index=0, 
+                  data_type='f'):
+        '''Read motor attribute parameters
 
+        Args:
+            id_num: The ID number of the motor to be read
+            index: The address of the parameter to be read
+            data_type: The data type of the parameter to be read: 
+                       'f':float,'u16':uint16,'s16':int16,'u32':uint32,'s32':int32,'u8':uint8,'s8':'int8'
 
-    # Motor enable
+        Returns:
+            value: Returns the value of the corresponding attribute parameter
+        '''
+
+        master_id = 0
+        cmd_data = [0] * 2
+        cmd_data[0] = master_id & 0xFF
+        tx_data = [0] * 8
+        tx_data[0] = index & 0xFF
+        tx_data[1] = (index >> 8) & 0xFF
+        cmd_mode = 17
+        if index < 0x7000:
+            cmd_mode = 9
+            type_list = ['u8', 's8', 'u16', 's16', 'u32', 's32', 'f']
+            tx_data[2] = type_list.index(data_type)
+        # Need to send using extended frame (data frame)
+        self.send_command(id_num=id_num, 
+                          cmd_mode=cmd_mode, 
+                          cmd_data=cmd_data, 
+                          data=tx_data, 
+                          rtr=0)
+        data = self.receive_data()
+        if READ_FLAG == 1 and (data[1] == 17 or data[1] == 9):
+            value = self.format_data(data=data[9:], 
+                                     format=data_type, 
+                                     type="decode")
+            return value[0]
+
     def motor_enable(self, 
                      id_num=127):
         '''Motor enable function
@@ -563,95 +628,53 @@ class CyberGear():
                           rtr=0)
         self.reply_state(id_num=id_num)
 
-    # Position control
-    def set_angle(self, 
-                  id_num=127, 
-                  angle=0, 
-                  speed=10, 
-                  limit_cur=27):
-        '''Motor angle control function.
-        Control the specified motor number to rotate to 
-        the specified angle at the specified speed
+    def motor_stop(self, 
+                    id_num=127):
+        '''Stop running function
 
         Args:
-            id_num: The ID number of the motor to be set
-            angle: Motor rotation angle (degrees)
-            speed: Maximum speed limit or feedforward speed (0~300r/min)
-            limit_cur: Current limit (0-27A)
+            id_num: The ID number of the motor to be stopped
 
         Returns:
             None
         '''
 
-        self.motor_enable(id_num=id_num)
-        self.set_mode(id_num=id_num, 
-                      mode=1)
-        self.write_property(id_num=id_num, 
-                            index=0x7018, 
-                            value=limit_cur, 
-                            data_type='f')
-        self.write_property(id_num=id_num, 
-                            index=0x7017, 
-                            value=speed*self.R_MIN_RAD_S, 
-                            data_type='f')
-        self.write_property(id_num=id_num, 
-                            index=0x7016, 
-                            value=angle*self.DEG_RAD, 
-                            data_type='f')
+        master_id = 0
+        cmd_data = [0] * 2
+        cmd_data[0] = master_id & 0xFF
+        tx_data = [0] * 8
+        for i in range(8):
+            tx_data[i] = 0x00
+        # Need to send using extended frame (data frame)
+        self.send_command(id_num=id_num, 
+                          cmd_mode=4, 
+                          cmd_data=cmd_data, 
+                          data=tx_data, 
+                          rtr=0)
+        self.reply_state(id_num=id_num)
 
-    # Speed control
-    def set_speed(self, 
-                  id_num=127, 
-                  speed=10, 
-                  limit_cur=27):
-        '''Motor speed control function.
-        Control the specified motor number to 
-        continuously rotate at the specified speed.
+    def set_mode(self, 
+                 id_num=127, 
+                 mode=0):
+        '''Set the motor to enter different control modes
 
         Args:
             id_num: The ID number of the motor to be set
-            speed:  Target speed (-300~300r/min)
-            limit_cur: Current limit (0-27A)
+            mode: Motor mode number
+                mode = 0: Impedance control mode
+                mode = 1: Position mode
+                mode = 2: Speed mode
+                mode = 3: Torque mode
 
         Returns:
             None
         '''
 
-        self.motor_enable(id_num=id_num)
-        self.set_mode(id_num=id_num, 
-                      mode=2)
-        self.write_property(id_num=id_num, 
-                            index=0x7018, 
-                            value=limit_cur, data_type='f')
-        self.write_property(id_num=id_num, 
-                            index=0x700A, 
-                            value=speed*self.R_MIN_RAD_S, 
-                            data_type='f')
+        self.write_prop(id_num=id_num, 
+                        index=0x7005, 
+                        value=mode, 
+                        data_type='u8')
 
-    # Torque (current) control
-    def set_torque(self, 
-                   id_num=127, 
-                   torque=0.1):
-        '''Motor torque (current) closed-loop control function.
-        Control the specified motor number to output the specified torque (Nm)
-
-        Args:
-            id_num: The ID number of the motor to be set
-            torque: Motor output (0~12Nm)
-
-        Returns:
-            None
-        '''
-
-        self.motor_enable(id_num=id_num)
-        self.set_mode(id_num=id_num, 
-                      mode=3)
-        self.write_property(id_num=id_num, 
-                            index=0x7006, 
-                            value=torque/self.TORQUE_CONSTANT, 
-                            data_type='f')
-
-    # Impedance control
     def impedance_control(self, 
                           id_num=127, 
                           pos=0, 
@@ -659,7 +682,7 @@ class CyberGear():
                           tff=0, 
                           kp=0, 
                           kd=0):
-        '''Motion control mode.
+        '''Impedance control mode.
 
         Args:
             id_num: The ID number of the motor to be set
@@ -701,34 +724,94 @@ class CyberGear():
         except Exception as e:
             print("!!!ERROR IN IMPENDENCE CONTROL:", e)
 
-    # Emergency stop of the motor
-    def motor_estop(self, 
-                    id_num=127):
-        '''Stop running function
+    def set_angle(self, 
+                  id_num=127, 
+                  angle=0, 
+                  speed=10, 
+                  limit_cur=27):
+        '''Motor angle control function.
+        Control the specified motor to rotate to 
+        the specified angle at the specified speed
 
         Args:
-            id_num: The ID number of the motor to be stopped
+            id_num: The ID number of the motor to be set
+            angle: Motor rotation angle (degrees)
+            speed: Maximum speed limit or feedforward speed (0~300r/min)
+            limit_cur: Current limit (0-27A)
 
         Returns:
             None
         '''
 
-        master_id = 0
-        cmd_data = [0] * 2
-        cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
-        for i in range(8):
-            tx_data[i] = 0x00
-        # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=4, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        self.reply_state(id_num=id_num)
+        self.motor_enable(id_num=id_num)
+        self.set_mode(id_num=id_num, 
+                      mode=1)
+        self.write_prop(id_num=id_num, 
+                        index=0x7018, 
+                        value=limit_cur, 
+                        data_type='f')
+        self.write_prop(id_num=id_num, 
+                        index=0x7017, 
+                        value=speed*self.R_MIN_RAD_S, 
+                        data_type='f')
+        self.write_prop(id_num=id_num, 
+                        index=0x7016, 
+                        value=angle*self.DEG_RAD, 
+                        data_type='f')
 
-    def set_zero_position(self, 
-                          id_num=127):
+    def set_speed(self, 
+                  id_num=127, 
+                  speed=10, 
+                  limit_cur=27):
+        '''Motor speed control function.
+        Control the specified motor to 
+        continuously rotate at the specified speed.
+
+        Args:
+            id_num: The ID number of the motor to be set
+            speed:  Target speed (-300~300r/min)
+            limit_cur: Current limit (0-27A)
+
+        Returns:
+            None
+        '''
+
+        self.motor_enable(id_num=id_num)
+        self.set_mode(id_num=id_num, 
+                      mode=2)
+        self.write_prop(id_num=id_num, 
+                        index=0x7018, 
+                        value=limit_cur, 
+                        data_type='f')
+        self.write_prop(id_num=id_num, 
+                        index=0x700A, 
+                        value=speed*self.R_MIN_RAD_S, 
+                        data_type='f')
+
+    def set_torque(self, 
+                   id_num=127, 
+                   torque=0.1):
+        '''Motor torque (current) closed-loop control function.
+        Control the specified motor to output the specified torque (Nm)
+
+        Args:
+            id_num: The ID number of the motor to be set
+            torque: Motor output (0~12Nm)
+
+        Returns:
+            None
+        '''
+
+        self.motor_enable(id_num=id_num)
+        self.set_mode(id_num=id_num, 
+                      mode=3)
+        self.write_prop(id_num=id_num, 
+                        index=0x7006, 
+                        value=torque/self.TORQUE_CONSTANT, 
+                        data_type='f')
+
+    def set_zero(self, 
+                 id_num=127):
         '''Set motor zero position function
 
         Args:
@@ -739,7 +822,7 @@ class CyberGear():
         '''
 
         mode_status = self.motor_state[id_num - 1][5]
-        self.motor_estop(id_num=id_num)
+        self.motor_stop(id_num=id_num)
         master_id = 0
         cmd_data = [0] * 2
         cmd_data[0] = master_id & 0xFF
@@ -754,6 +837,47 @@ class CyberGear():
         self.reply_state(id_num=id_num)
         if mode_status == 2:
             self.motor_enable(id_num=id_num)
+
+    def set_id(self, 
+               id_num=127, 
+               new_id=1):
+        '''Set motor ID number (saved after power off).
+
+        Args:
+            id_num: The ID number of the motor that needs to be reset. 
+                    If you don't know the current motor number, 
+                    you can broadcast with 0, but at this time 
+                    only one motor can be connected to the bus, 
+                    otherwise multiple motors will be set to the same number.
+            new_id: Preset ID
+
+        Returns:
+            True: Setting successful
+            False: Setting failed
+        '''
+
+        # Changing the ID number must be done in motor mode
+        self.motor_stop(id_num=id_num)
+        time.sleep(0.1)
+        self.get_id(id_num=id_num)
+        master_id = 0
+        cmd_data = [0] * 2
+        cmd_data[1] = new_id & 0xFF
+        cmd_data[0] = master_id & 0xFF
+        if len(MCU_ID) == 8:
+            tx_data = MCU_ID
+            # Need to send using extended frame (data frame)
+            self.send_command(id_num=id_num, 
+                              cmd_mode=7, 
+                              cmd_data=cmd_data, 
+                              data=tx_data, 
+                              rtr=0)
+            time.sleep(0.1)
+            self.reply_state(id_num=id_num)
+            return True
+        else:
+            print("Set ID to " + str(new_id) + " failed!")
+            return False
 
     def clear_error(self, 
                     id_num=127):
@@ -783,52 +907,7 @@ class CyberGear():
                           rtr=0)
         self.reply_state(id_num=id_num)
 
-    # Set motor ID number
-    def set_id(self, 
-               id_num=127, 
-               new_id=1):
-        '''Set motor ID number.
-        Change the motor CAN_ID number (saved after power off), 
-        change the current motor CAN_ID, take effect immediately.
-
-        Args:
-            id_num: The ID number of the motor that needs to be reset. 
-                    If you don't know the current motor number, 
-                    you can broadcast with 0, but at this time 
-                    only one motor can be connected to the bus, 
-                    otherwise multiple motors will be set to the same number.
-            new_id: Preset ID
-
-        Returns:
-            True: Setting successful
-            False: Setting failed
-        '''
-
-        # Changing the ID number must be done in motor mode
-        self.motor_estop(id_num=id_num)
-        time.sleep(0.1)
-        self.get_id(id_num=id_num)
-        master_id = 0
-        cmd_data = [0] * 2
-        cmd_data[1] = new_id & 0xFF
-        cmd_data[0] = master_id & 0xFF
-        if len(MCU_ID) == 8:
-            tx_data = MCU_ID
-            # Need to send using extended frame (data frame)
-            self.send_command(id_num=id_num, 
-                              cmd_mode=7, 
-                              cmd_data=cmd_data, 
-                              data=tx_data, 
-                              rtr=0)
-            time.sleep(0.1)
-            self.reply_state(id_num=id_num)
-            return True
-        else:
-            print("Set ID to " + str(new_id) + " failed!")
-            return False
-
-    # Restore factory settings
-    def init_config(self, 
+    def restore_config(self, 
                     id_num=127):
         '''Restore motor parameters to factory settings function.
         To restore all configuration parameters to the factory settings, 
@@ -844,7 +923,7 @@ class CyberGear():
             None
         '''
 
-        self.motor_estop(id_num=id_num)
+        self.motor_stop(id_num=id_num)
         master_id = 0
         cmd_data = [0]*2
         cmd_data[1] = 0x03
@@ -862,101 +941,6 @@ class CyberGear():
         time.sleep(3.0)
         self.set_id(127, id_num)
         print("Successfully restored to factory settings!")
-
-    def write_property(self, 
-                       id_num=127, 
-                       index=0, 
-                       data_type='f', 
-                       value=0):
-        '''Modify motor attribute parameters
-
-        Args:
-            id_num: The ID number of the motor to be modified
-            index: The address of the parameter to be read
-            data_type: The data type of the parameter to be written: 
-                       'f':float,'u16':uint16,'s16':int16,'u32':uint32,'s32':int32,'u8':uint8,'s8':'int8'
-            value: Corresponding parameter data.
-
-        Returns:
-            None
-        '''
-        
-        master_id = 0
-        cmd_data = [0] * 2
-        cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
-        tx_data[0] = index & 0xFF
-        tx_data[1] = (index >> 8) & 0xFF
-        cmd_mode = 18
-        if index < 0x7000:
-            cmd_mode = 8
-            type_list = ['u8', 's8', 'u16', 's16', 'u32', 's32', 'f']
-            tx_data[2] = type_list.index(data_type)
-        tx_data[4:] = self.format_data(data=[value], 
-                                       format=data_type, 
-                                       type="encode")
-        # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=cmd_mode, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        self.reply_state(id_num=id_num)
-        # Save forever
-        if cmd_mode == 8:
-            self.motor_estop(id_num=id_num)
-            cmd_data[1] = 0x02
-            tx_data = [0] * 8
-            # Need to send using extended frame (data frame)
-            self.send_command(id_num=id_num, 
-                              cmd_mode=cmd_mode, 
-                              cmd_data=cmd_data, 
-                              data=tx_data, 
-                              rtr=0)
-            time.sleep(0.1)
-            self.reply_state(id_num=id_num)
-
-
-    # Read parameters
-    def read_property(self, 
-                      id_num=127, 
-                      index=0, 
-                      data_type='f'):
-        '''Read motor attribute parameters
-
-        Args:
-            id_num: The ID number of the motor to be read
-            index: The address of the parameter to be read
-            data_type: The data type of the parameter to be read: 
-                       'f':float,'u16':uint16,'s16':int16,'u32':uint32,'s32':int32,'u8':uint8,'s8':'int8'
-
-        Returns:
-            value: Returns the value of the corresponding attribute parameter
-        '''
-
-        master_id = 0
-        cmd_data = [0] * 2
-        cmd_data[0] = master_id & 0xFF
-        tx_data = [0] * 8
-        tx_data[0] = index & 0xFF
-        tx_data[1] = (index >> 8) & 0xFF
-        cmd_mode = 17
-        if index < 0x7000:
-            cmd_mode = 9
-            type_list = ['u8', 's8', 'u16', 's16', 'u32', 's32', 'f']
-            tx_data[2] = type_list.index(data_type)
-        # Need to send using extended frame (data frame)
-        self.send_command(id_num=id_num, 
-                          cmd_mode=cmd_mode, 
-                          cmd_data=cmd_data, 
-                          data=tx_data, 
-                          rtr=0)
-        data = self.receive_data()
-        if READ_FLAG == 1 and (data[1] == 17 or data[1] == 9):
-            value = self.format_data(data=data[9:], 
-                                     format=data_type, 
-                                     type="decode")
-            return value[0]
 
     def get_id(self, 
                id_num=127):
@@ -985,8 +969,8 @@ class CyberGear():
             MCU_ID = data[5:]
             return id_num
 
-    def get_state(self, 
-                  id_num=127):
+    def get_posvel(self, 
+                   id_num=127):
         '''Read the current position and speed of the motor,
         the units are degrees (°) and revolutions per minute (r/min) respectively.
 
@@ -1007,7 +991,10 @@ class CyberGear():
         try:
             # Call the master_ID write interface to get real-time position and speed 
             # through the motor response feedback frame
-            self.write_property(id_num=id_num, index=0x7018, value=27, data_type='f')
+            self.write_prop(id_num=id_num, 
+                            index=0x7018, 
+                            value=27, 
+                            data_type='f')
             if self.READ_FLAG == 1 and id_num != 0:
                 pos_vel[0] = round(self.motor_state[id_num - 1][0], 1)
                 pos_vel[1] = round(self.motor_state[id_num - 1][1], 1)
@@ -1038,12 +1025,12 @@ class CyberGear():
         global READ_FLAG
         vol_cur = [0, 0]
         try:
-            vol_cur[0] = self.read_property(id_num=id_num, 
-                                            index=0x302b, 
-                                            data_type='f')
-            vol_cur[1] = self.read_property(id_num=id_num, 
-                                            index=0x301e, 
-                                            data_type='f')
+            vol_cur[0] = self.read_prop(id_num=id_num, 
+                                        index=0x302b, 
+                                        data_type='f')
+            vol_cur[1] = self.read_prop(id_num=id_num, 
+                                        index=0x301e, 
+                                        data_type='f')
             if READ_FLAG == 1:
                 vol_cur[0] = round(vol_cur[0], 1)
                 vol_cur[1] = round(vol_cur[1], 2)
