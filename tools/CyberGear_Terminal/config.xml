@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<m>
+    <c name="baud_rate" type="4" value="921600"/>
+    <c name="debug_pack" type="1" value="false"/>
+    <c name="debug_step" type="1" value="false"/>
+    <c name="language" type="10" value="zh_CN"/>
+    <c name="last_com" type="10" value="COM5"/>
+    <c name="oscilloscope_frame_rate" type="4" value="24"/>
+    <c name="scale" type="4" value="100"/>
+    <c name="setting">
+        <c name="auto_connect" type="1" value="true"/>
+        <c name="auto_increase_can_id" type="1" value="true"/>
+        <c name="enable_multiple_devices" type="1" value="true"/>
+        <c name="load_last_project" type="1" value="false"/>
+        <c name="record_read_raw_data" type="1" value="false"/>
+        <c name="record_write_raw_data" type="1" value="true"/>
+        <c name="remove_device_on_disconnected" type="1" value="true"/>
+        <c name="save_project_on_exit" type="1" value="false"/>
+        <c name="show_left_sidebar" type="1" value="true"/>
+        <c name="show_panel" type="1" value="true"/>
+        <c name="show_right_sidebar" type="1" value="true"/>
+        <c name="trigger_by_left" type="1" value="true"/>
+        <c name="upload_param_on_connected" type="1" value="true"/>
+    </c>
+    <c name="support_at" type="1" value="true"/>
+    <c name="update_dt" type="4" value="1"/>
+    <c name="update_timeout" type="4" value="60000"/>
+    <c name="wnd">
+        <c name="h_splitter">
+            <l type="2" value="325"/>
+            <l type="2" value="774"/>
+            <l type="2" value="319"/>
+        </c>
+        <c name="layout" type="4" value="0"/>
+        <c name="tree">
+            <l type="4" value="180"/>
+            <l type="4" value="110"/>
+        </c>
+        <c name="v_splitter">
+            <l type="4" value="400"/>
+            <l type="4" value="200"/>
+        </c>
+    </c>
+</m>
