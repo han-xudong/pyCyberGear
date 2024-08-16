@@ -22,7 +22,7 @@ To use pyCyberGear, you need the following hardware:
 
 ## Installation
 
-The `pyCyberGear` package supports Python 3.9 through Python 3.12 on Windows and Linux.
+The `pyCyberGear` library supports Python 3.9 through Python 3.12 on Windows and Linux.
 
 Install the latest release with:
 
