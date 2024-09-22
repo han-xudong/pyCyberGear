@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: pycybergear
+Version: 0.1.0
+Summary: Python library for controlling CyberGear motors
+Home-page: https://github.com/han-xudong/pyCyberGear
+Author: Xudong Han
+License: MIT
+Keywords: CyberGear,robotics,motor
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.6
+License-File: LICENSE
+Requires-Dist: pyserial==3.5
+Requires-Dist: numpy==2.0.1
