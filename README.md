@@ -16,7 +16,7 @@ PyCyberGear is a Python library that allows you to control the CyberGear motor w
 To use pyCyberGear, you need the following hardware:
 
 - [CyberGear motor](https://www.mi.com/cyber-gear)
-- [DR USB-to-CAN adapter](https://item.taobao.com/item.htm?id=737373782475)
+- [DR USB-to-CAN adapter](https://item.taobao.com/item.htm?id=737373782475) (IMPORTANT!)
 - 24V10A power supply
 - Power board
 
