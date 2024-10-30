@@ -49,7 +49,8 @@ import numpy as np
 class CyberGear():
     def __init__(self,
                  com_port='COM3',
-                 baud_rate=115200) -> None:
+                 baud_rate=115200,
+                 model="DR") -> None:
         '''Xiaomi CyberGear Micro Motor Python Control Library,
         which can be used to control Xiaomi CyberGear micro motors
         through serial port communication.
@@ -83,6 +84,7 @@ class CyberGear():
         # Test motor control under Windows, 
         # corresponding to the connected COM port and baud rate
         self.uart = serial.Serial(com_port, baud_rate)
+        self.model = model
 
         # For Linux,
         # Test under Jetson Nano (Ubuntu) and Raspberry Pi (Raspbian), 
@@ -188,10 +190,20 @@ class CyberGear():
             udata: Serial frame data
         '''
 
-        udata = [0xAA, 1, 0, 0x08, 0, 0, 0, 0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        if len(data) == 13 and data[0] == 0x08:
-            for i in range(12):
-                udata[4 + i] = data[i + 1]
+
+        if self.model == "DR":
+            udata = [0xAA, 1, 0, 0x08, 0, 0, 0, 0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+            if len(data) == 13 and data[0] == 0x08:
+                for i in range(12):
+                    udata[4 + i] = data[i + 1]
+                return udata
+            else:
+                return []
+        elif self.model == "CAN":
+            udata = [0x41, 0x54, 0x0, 0x0, 0x0, 0x0, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d, 0x0a]
+            if len(data) == 13 and data[4] == 0x08:
+                for i in range(13):
+                    udata[2 + i] = data[i]
             return udata
         else:
             return []
@@ -206,15 +218,24 @@ class CyberGear():
         Returns:
             cdata: CAN message data
         '''
-
-        cdata = [0x08, 0, 0, 0, 0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        if len(data) == 16 and data[3] == 0x08:
-            for i in range(12):
-                cdata[1 + i] = data[i + 4]
-            return cdata
-        else:
-            self.READ_FLAG = -1
-            return []
+        if self.model == "DR":
+            cdata = [0x08, 0, 0, 0, 0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+            if len(data) == 16 and data[3] == 0x08:
+                for i in range(12):
+                    cdata[1 + i] = data[i + 4]
+                return cdata
+            else:
+                self.READ_FLAG = -1
+                return []
+        elif self.model == "CAN":
+            cdata = [0x0, 0x0, 0x0, 0x0, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+            if len(data) == 17 and data[6] == 0x08:
+                for i in range(13):
+                    cdata[i] = data[i + 2]
+                return cdata
+            else:
+                self.READ_FLAG = -1
+                return []
 
     def _send_can(self, 
                   id_num=127, 
@@ -235,11 +256,18 @@ class CyberGear():
             None
         '''
 
-        cdata = [0x08, 0, 0, 0, 0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        cdata[1] = cmd_mode
-        cdata[2] = cmd_data[1]
-        cdata[3] = cmd_data[0]  # master_ID
-        cdata[4] = int(id_num)
+        if self.model == "DR":
+            cdata = [0x08, 0, 0, 0, 0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+            cdata[1] = cmd_mode
+            cdata[2] = cmd_data[1]
+            cdata[3] = cmd_data[0]  # master_ID
+            cdata[4] = int(id_num)
+        elif self.model == "CAN":
+            cdata = [0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+            cdata[0] = (cmd_mode << 3) | (cmd_data[1] >> 5)
+            cdata[1] = (cmd_data[1] << 3) | (cmd_data[0] >> 5)
+            cdata[2] = ((cmd_data[0] << 3) | (id_num >>5)) & 0xff
+            cdata[3] = (id_num << 3) | 0x04
         for i in range(8):
             cdata[5 + i] = data[i]
         self._write_port(data=self._can_to_uart(data=cdata, 
