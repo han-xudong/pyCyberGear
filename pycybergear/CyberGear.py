@@ -58,6 +58,7 @@ class CyberGear():
         Args:
             com_port: Serial port number
             baud_rate: Baud rate (default is 115200)
+            model: USB to CAN module model (default is "DR")
 
         Returns:
             None
