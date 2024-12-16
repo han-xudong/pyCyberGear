@@ -40,8 +40,10 @@ Here is an example of how to init pyCyberGear:
 ```python
 from pycybergear import CyberGear
 
-cybergear = CyberGear(com_port="{YOUR_COM_PORT}", baud_rate=115200)
+cybergear = CyberGear(com_port="{YOUR_COM_PORT}", baud_rate=115200, model={YOUR_USB-TO-CAN})
 ```
+
+Two kinds of USB-to-CAN adaptors are supported, including DR's (model="DR") and YourCee's (model="CAN").
 
 Here are some of the functions that you can use with pyCyberGear:
 
