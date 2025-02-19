@@ -8,7 +8,7 @@ setup(
     author='Xudong Han',
     url='https://github.com/han-xudong/pyCyberGear',
     packages=find_packages(),
-    install_requires=['pyserial==3.5', 'numpy==2.0.1'],
+    install_requires=['pyserial>=3.5', 'numpy>=2.0.1'],
     python_requires='>=3.6',
     keywords=['CyberGear', 'robotics', 'motor'],
     license='MIT',
