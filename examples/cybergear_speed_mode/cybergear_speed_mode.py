@@ -9,10 +9,6 @@
 #                   The motors will move to the target position, and
 #                   the position and velocity of motors will be
 #                   displayed in real time.
-# Function List:    cybergear_loop
-# History:
-#       <author>        <version>       <time>      <desc>
-#       Han Xudong      1.0.0           2024/06/21  Created the module
 # ------------------------------------------------------------------
 
 import time
@@ -23,6 +19,7 @@ from pycybergear import CyberGear
 
 def cybergear_speed_mode(com_port: str,
                          baud_rate: int,
+                         model: str,
                          ids: list,
                          vels: int,
                          motion_time: int) -> None:
@@ -40,7 +37,7 @@ def cybergear_speed_mode(com_port: str,
     '''
 
     # Create an instance of the CyberGear class
-    cybergear = CyberGear(com_port, baud_rate)
+    cybergear = CyberGear(com_port, baud_rate, model)
 
     # Set mode and zero position
     for id in ids:
@@ -111,6 +108,7 @@ if __name__ == '__main__':
     # Set the COM port and baud rate of the CyberGear controller
     com_port = 'COM11'
     baud_rate = 115200
+    model = 'CAN'
     # Set the IDs of motors
     ids = [7]
     # Set the velocity of motors
@@ -120,6 +118,7 @@ if __name__ == '__main__':
     # Run the position mode
     cybergear_speed_mode(com_port,
                          baud_rate,
+                         model,
                          ids,
                          vels,
                          motion_time)
