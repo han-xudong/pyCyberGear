@@ -92,7 +92,7 @@ def cybergear_loop(
                 pos_lines[i].set_ydata(pos_list[i])
                 vel_lines[i].set_xdata(time_list)
                 vel_lines[i].set_ydata(vel_list[i])
-            print(cur_pos, "      ", end="\r")
+            print("Current positions:", cur_pos, "      ", end="\r")
             ax1.set_xlim([time_list[0], time_list[-1]])
             ax1.set_ylim([np.min(pos_list), np.max(pos_list)])
             ax2.set_xlim([time_list[0], time_list[-1]])
@@ -115,7 +115,7 @@ def cybergear_loop(
                 pos_lines[i].set_ydata(pos_list[i])
                 vel_lines[i].set_xdata(time_list)
                 vel_lines[i].set_ydata(vel_list[i])
-            print(cur_pos, "      ", end="\r")
+            print("Current positions:", cur_pos, "      ", end="\r")
             ax1.set_xlim([time_list[0], time_list[-1]])
             ax1.set_ylim([np.min(pos_list), np.max(pos_list)])
             ax2.set_xlim([time_list[0], time_list[-1]])
@@ -140,7 +140,7 @@ def cybergear_loop(
             pos_lines[i].set_ydata(pos_list[i])
             vel_lines[i].set_xdata(time_list)
             vel_lines[i].set_ydata(vel_list[i])
-        print(cur_pos, "      ", end="\r")
+        print("Current positions:", cur_pos, "      ", end="\r")
         ax1.set_xlim([time_list[0], time_list[-1]])
         ax1.set_ylim([np.min(pos_list), np.max(pos_list)])
         ax2.set_xlim([time_list[0], time_list[-1]])
@@ -155,7 +155,7 @@ def cybergear_loop(
     print("\nDone!")
 
     # Save the figure and the data
-    save_path = time.strftime("%Y%m%d%H%M%S", time.localtime()) + "/"
+    save_path = "data/" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + "/"
     os.makedirs(save_path)
     fig.savefig(save_path + "curve.png")
     print("The figure is saved as curve.png in " + save_path)
@@ -173,15 +173,15 @@ def cybergear_loop(
 
 if __name__ == "__main__":
     # Set the COM port and baud rate
-    com_port = "COM11"
+    com_port = "COM3"
     baud_rate = 115200
-    model = "CAN"
+    model = "DR"
     # Set the ids of motors
-    ids = [7]
+    ids = [1]
     # Set the angle range
     pos_range = [-360, 360]
     # Set the number of rounds
-    rounds = 10
+    rounds = 5
     # Set the velocity
     vel = 20
     # Start the loop motion

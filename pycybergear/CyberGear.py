@@ -132,7 +132,6 @@ class CyberGear:
         while self.uart.inWaiting() > 0:
             byte_list.append(list(self.uart.read(1))[0])
 
-        print(byte_list)
         # Return the received data
         if len(byte_list) == num:
             self.READ_FLAG = 1

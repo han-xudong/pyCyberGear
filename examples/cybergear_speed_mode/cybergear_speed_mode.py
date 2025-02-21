@@ -17,24 +17,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pycybergear import CyberGear
 
-def cybergear_speed_mode(com_port: str,
-                         baud_rate: int,
-                         model: str,
-                         ids: list,
-                         vels: int,
-                         motion_time: int) -> None:
-    '''Position mode for CyberGear motors.
-    
+
+def cybergear_speed_mode(
+    com_port: str, baud_rate: int, model: str, ids: list, vels: int, motion_time: int
+) -> None:
+    """Position mode for CyberGear motors.
+
     Args:
         com_port: The COM port of the CyberGear controller.
         baud_rate: The baud rate of the CyberGear controller.
         ids: The IDs of motors.
         target_pos: The target position of motors.
         vel: The velocity of motors.
-        
+
     Returns:
         None
-    '''
+    """
 
     # Create an instance of the CyberGear class
     cybergear = CyberGear(com_port, baud_rate, model)
@@ -54,10 +52,14 @@ def cybergear_speed_mode(com_port: str,
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
     plt.ion()
-    pos_lines = [ax1.plot(pos_list[i], label='Motor ' + str(ids[i]))[0] for i in range(len(ids))]
-    vel_lines = [ax2.plot(vel_list[i], label='Motor ' + str(ids[i]))[0] for i in range(len(ids))]
-    ax1.legend(loc='upper right')
-    ax2.legend(loc='upper right')
+    pos_lines = [
+        ax1.plot(pos_list[i], label="Motor " + str(ids[i]))[0] for i in range(len(ids))
+    ]
+    vel_lines = [
+        ax2.plot(vel_list[i], label="Motor " + str(ids[i]))[0] for i in range(len(ids))
+    ]
+    ax1.legend(loc="upper right")
+    ax2.legend(loc="upper right")
     plt.show()
 
     # Set the start time and error
@@ -65,8 +67,7 @@ def cybergear_speed_mode(com_port: str,
 
     # Move motors to the target position
     for i, id in enumerate(ids):
-        cybergear.set_vel(id_num=id, 
-                          vel=vels[i])
+        cybergear.set_vel(id_num=id, vel=vels[i])
 
     # Display the position and velocity of motors in real time
     while time.time() - start_time < motion_time:
@@ -88,27 +89,30 @@ def cybergear_speed_mode(com_port: str,
     # Stop the motors
     for id in ids:
         cybergear.motor_stop(id_num=id)
-    print('\nDone!')
+    print("\nDone!")
 
     # Save the figure and the data
-    save_path = time.strftime('%Y%m%d%H%M%S', time.localtime()) + '/'
+    save_path = "data/" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + "/"
     os.makedirs(save_path)
-    fig.savefig(save_path + 'curve.png')
-    print('The figure is saved as curve.png in ' + save_path)
-    np.savetxt(save_path + 'data.csv', 
-               np.array([time_list] + pos_list + vel_list).T, 
-               delimiter=',',
-               fmt='%.3f',
-               header='Time,' + 
-                      ', '.join([f'Motor {id + 1} Position' for id in ids]) +
-                      ', '.join([f'Motor {id + 1} Velocity' for id in ids]))
-    print('The data is saved as data.csv in ' + save_path)
+    fig.savefig(save_path + "curve.png")
+    print("The figure is saved as curve.png in " + save_path)
+    np.savetxt(
+        save_path + "data.csv",
+        np.array([time_list] + pos_list + vel_list).T,
+        delimiter=",",
+        fmt="%.3f",
+        header="Time,"
+        + ", ".join([f"Motor {id + 1} Position" for id in ids])
+        + ", ".join([f"Motor {id + 1} Velocity" for id in ids]),
+    )
+    print("The data is saved as data.csv in " + save_path)
 
-if __name__ == '__main__':
-    # Set the COM port and baud rate of the CyberGear controller
-    com_port = 'COM11'
+
+if __name__ == "__main__":
+    # Set the COM port and baud rate
+    com_port = "COM1"
     baud_rate = 115200
-    model = 'CAN'
+    model = "CAN"
     # Set the IDs of motors
     ids = [7]
     # Set the velocity of motors
@@ -116,9 +120,4 @@ if __name__ == '__main__':
     # Set the motion time
     motion_time = 5
     # Run the position mode
-    cybergear_speed_mode(com_port,
-                         baud_rate,
-                         model,
-                         ids,
-                         vels,
-                         motion_time)
+    cybergear_speed_mode(com_port, baud_rate, model, ids, vels, motion_time)

@@ -95,7 +95,7 @@ def cybergear_position_mode(
     print("\nDone!")
 
     # Save the figure and the data
-    save_path = time.strftime("%Y%m%d%H%M%S", time.localtime()) + "/"
+    save_path = "data/" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + "/"
     os.makedirs(save_path)
     fig.savefig(save_path + "curve.png")
     print("The figure is saved as curve.png in " + save_path)
@@ -112,8 +112,8 @@ def cybergear_position_mode(
 
 
 if __name__ == "__main__":
-    # Set the COM port and baud rate of the CyberGear controller
-    com_port = "COM11"
+    # Set the COM port and baud rate
+    com_port = "COM1"
     baud_rate = 115200
     model = "CAN"
     # Set the IDs of motors
