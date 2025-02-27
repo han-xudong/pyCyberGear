@@ -29,8 +29,7 @@ Install the latest release with:
 ```bash
 git clone https://github.com/han-xudong/pyCyberGear.git
 cd pyCyberGear
-pip install -e .
-pip install -r requirements.txt
+pip install .
 ```
 
 ## Quick Start
