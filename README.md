@@ -70,7 +70,7 @@ cybergear.set_mode(id_num='{MOTOR_ID}', mode=0)
 cybergear.impedance_control(id_num='{MOTOR_ID}', pos='{ANGLE}', vel='{VELOCITY}', tff='{FEEDFORWARD_TORQUE}', kp='{PROPORTIONAL_GAIN}', kd='{DERIVATIVE_GAIN}')
 ```
 
-- 'set_pos`: Control the specified motor to rotate to the specified angle at the specified speed.
+- `set_pos`: Control the specified motor to rotate to the specified angle at the specified speed.
 
 ```python
 cybergear.set_pos(id_num='{MOTOR_ID}', pos='{ANGLE}', vel='{VELOCITY}')
