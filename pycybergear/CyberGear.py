@@ -635,7 +635,7 @@ class CyberGear:
             id_num=id_num, cmd_mode=cmd_mode, cmd_data=cmd_data, data=tx_data, rtr=0
         )
         data = self._receive_can()
-        if READ_FLAG == 1 and (data[1] == 17 or data[1] == 9):
+        if self.READ_FLAG == 1 and (data[1] == 17 or data[1] == 9):
             value = self._format_data(data=data[9:], format=data_type, type="decode")
             return value[0]
 
@@ -962,7 +962,7 @@ class CyberGear:
             id_num=id_num, cmd_mode=0, cmd_data=cmd_data, data=tx_data, rtr=0
         )
         data = self._receive_can()
-        if READ_FLAG == 1 and data[1] == 0:
+        if self.READ_FLAG == 1 and data[1] == 0:
             MCU_ID = data[5:]
             return id_num
 
@@ -1014,12 +1014,12 @@ class CyberGear:
         Raises:
             "!!!ERROR IN GET VOLTAGE AND CURRENT"
         """
-        global READ_FLAG
+        
         vol_cur = [0, 0]
         try:
             vol_cur[0] = self._read_prop(id_num=id_num, index=0x302B, data_type="f")
             vol_cur[1] = self._read_prop(id_num=id_num, index=0x301E, data_type="f")
-            if READ_FLAG == 1:
+            if self.READ_FLAG == 1:
                 vol_cur[0] = round(vol_cur[0], 1)
                 vol_cur[1] = round(vol_cur[1], 2)
                 return vol_cur
